@@ -1,0 +1,95 @@
+{% extends "social/base.html" %}
+
+{% from "social/macros.html" import render_message %}
+
+{% block main %}
+  <div class="span7">
+
+    <h2>{{ _("Share an update") }}</h2>
+
+    <form action="" method="POST">
+      <textarea class="span7" name="content" id="share-textarea" rows="3" style="resize: none;"></textarea>
+
+      <button type="submit" name="action" value="share" class="btn btn-primary">{{ _("Share") }}</button>
+
+      {{ _("with group:") }}
+      <select name="group_id" id="group_id" style="display: none;">
+        <option value="" selected>{{ _("Everyone") }}</option>
+        {% for group in groups %}
+          <option value="{{ group.id }}">{{ group.name }}</option>
+        {% endfor %}
+      </select>
+
+      <span class="dropdown" id="menu1">
+        <a class="dropdown-toggle" data-toggle="dropdown" href="#menu1">
+          <b id="group_target"></b> <b class="caret"></b>
+        </a>
+        <ul class="dropdown-menu" id="group_dropdown_menu">
+        </ul>
+      </span>
+    </form>
+
+    <script>
+      $(document).ready(function() {
+        var source = $("#group_id");
+        var target = $("#group_target");
+        var selected = source.find("option[selected]");  // get selected <option>
+        target.html(selected.text());
+
+        var options = $("option", source);
+        options.each(function() {
+          var a = $('<a/>', {href: '#', text: $(this).text()});
+          a.data("group_id", $(this).val());
+          var li = $('<li/>');
+          li.append(a);
+          $("#group_dropdown_menu").append(li);
+        });
+        $("#group_dropdown_menu li a").each(function() {
+          $(this).click(function() {
+            target.html($(this).text());
+            source.val($(this).data('group_id'));
+          })
+        });
+      });
+    </script>
+
+    <h2>{{ _("Your feed") }}</h2>
+
+    <ul style="list-style: none; margin: 0px;">
+
+      {% for message in messages %}
+        {{ render_message(message) }}
+      {% endfor %}
+
+    </ul>
+
+  </div>
+
+  <div class="span3">
+    <h3>{{ _("Latest visitors") }} ({{ active_visitors_count }} {{ _("active") }})</h3>
+
+    <ul style="margin: 0;">
+      {% for user in latest_visitors %}
+        <li style="list-style: none;"><a href="{{ user.url }}"><img src="{{ user.url }}/mugshot?s=20"
+                style="margin: 2px;"> {{ user.name }}</a>
+          {% if user.is_active %}<img src="/static/img/greendot.png">{% endif %}
+        </li>
+      {% endfor %}
+    </ul>
+
+    <h3>{{ _("Popular tags") }}</h3>
+
+    <ul>
+      <li><a href="/social/tags/1">#tag1</a></li>
+      <li><a href="/social/tags/2">#tag2</a></li>
+      <li><a href="/social/tags/3">#tag3</a></li>
+      <li><a href="/social/tags/4">#tag4</a></li>
+    </ul>
+
+    <p>
+      <a href="/social/tags/">All tags</a>.
+    </p>
+
+  </div>
+
+{% endblock %}

@@ -1,0 +1,270 @@
+{% extends "dm/base.html" %}
+
+{% from "macros.html" import m_audit_log %}
+
+{% block main %}
+
+  <h2>{{ file.name }}</h2>
+
+  <div style="width: 74%; position: relative; float: left;">
+
+    <h3 class="main">Preview</h3>
+
+    <div class="preview">
+      <img src="{{ file.url }}/preview?size=550" class="preview" data-page="0">
+
+      <div class="preview-nav">
+        <a class="preview-prev" title="Previous image">Previous image</a>
+        <a class="preview-next" title="Next image">Next image</a>
+      </div>
+    </div>
+
+    <div class="collapsable">
+      <h3 class="main">Properties</h3>
+
+      <div>
+        <p>
+          File name: {{ file.name }}
+        </p>
+
+        <p>
+          Size: {{ file.size|filesize }}
+        </p>
+
+        <p>
+          MIME Type: {{ file.mime_type }}
+        </p>
+
+        <p>
+          Language: {{ file.language }}
+        </p>
+      </div>
+
+      {% if file.extra_metadata %}
+        <h3 class="main">Extra Metadata</h3>
+        <div>
+          {% for k, v in file.extra_metadata|dictsort %}
+            <p>
+              {{ k }}: {{ v }}
+            </p>
+          {% endfor %}
+        </div>
+      {% endif %}
+
+      <h3 class="main">Tags</h3>
+
+      <div>
+        <form action="/dm/{{ file.id }}/tag" method="POST">
+          <input class="tagbox" name="tags" value="{{ file.tags }}">
+          <input type="submit" class="btn-primary">
+        </form>
+      </div>
+
+      <h3 class="main">Dates</h3>
+
+      <div>
+        <p>
+          Created on: {{ file.created_at|date_age }}
+        </p>
+
+        <p>
+          Last modified on: {{ file.updated_at|date_age }}
+        </p>
+      </div>
+
+      <h3 class="main">People</h3>
+
+      <div>
+        <p>
+          Creator: <a href="{{ file.creator._url }}"><img src="{{ file.creator._url }}/mugshot?s=16">
+          {{ file.creator }}</a>
+        </p>
+
+        <p>
+          Owner: <a href="{{ file.owner._url }}"><img src="{{ file.owner._url }}/mugshot?s=16">
+          {{ file.owner }}</a>
+        </p>
+      </div>
+
+      {{ m_audit_log(audit_entries) }}
+
+    </div>
+
+  </div>
+
+  <div style="width: 24%; position: relative; float: right;">
+
+    <div class="well" style="padding: 8px 0;">
+      <ul class="nav nav-list">
+        <li class="nav-header">Actions</li>
+        <li><a href="{{ file.url }}/download"><i class="icon-eye-open"></i> View in browser</a></li>
+
+        <li><a href="{{ file.url }}/download?attach=true"><i class="icon-download"></i> Download</a></li>
+        <li><a href="#upload-new-version" data-toggle="modal"><i class="icon-upload"></i> Upload new version</a></li>
+        <li><a href="#send-by-email" data-toggle="modal"><i class="icon-envelope"></i> Email</a></li>
+        <li><a href="#delete" data-toggle="modal"><i class="icon-trash"></i> Delete</a></li>
+      </ul>
+    </div>
+
+    <div class="well property-box" style="padding: 8px 0; background-color: white;">
+      <h4 style="padding: 3px 15px;">Properties</h4>
+      <ul class="property-list">
+        <li>File name: {{ file.name }}</li>
+        <li>Size: {{ file.size|filesize }}</li>
+        <li>Type: {{ file.mime_type }}</li>
+        <li>Language: {{ file.language }}</li>
+        <li>Pages: {{ file.page_num }}</li>
+        <li>Created: {{ file.created_at|age }}</li>
+        <li>Modified: {{ file.updated_at|age }}</li>
+        <li>Creator: <a href="{{ file.creator._url }}"><img src="{{ file.creator._url }}/mugshot?s=16">
+          {{ file.creator }}</a></li>
+        <li>Owner: <a href="{{ file.owner._url }}"><img src="{{ file.owner._url }}/mugshot?s=16">
+          {{ file.owner }}</a></li>
+      </ul>
+    </div>
+
+    <div class="well property-box" style="padding: 8px 0; background-color: white;">
+      <h4 style="padding: 3px 15px;">Tags</h4>
+
+      <ul class="property-list"><li>
+      {% for tag in file.tags.split(",") %}
+        <a href="/dm/tag?tag={{ tag }}">{{ tag }}</a>
+        &nbsp;&nbsp;
+      {% else %}
+        No tag.
+      {% endfor %}
+      </li></ul>
+    </div>
+  </div>
+
+
+  <!-- ========================================================================================= -->
+  <!-- modal stuff -->
+
+  <div class="modal fade" id="upload-new-version">
+    <form id="fileupload" action="{{ file.url }}/upload" method="POST" enctype="multipart/form-data"
+            style="margin-bottom: 0;">
+      <div class="modal-header">
+        <button class="close" data-dismiss="modal">&times;</button>
+        <h3>Upload new version</h3>
+      </div>
+      <div class="modal-body">
+        <!--input type="file" name="file"-->
+
+        <div class="fileupload fileupload-new" data-fileupload="file">
+          <div class="fileupload-preview uneditable-input span5"></div>
+          <span class="btn btn-file"><span class="fileupload-new">Select file</span><span class="fileupload-exists">Change</span><input
+                  name="file" type="file"/></span>
+          <a href="#" class="btn fileupload-exists" data-dismiss="fileupload">Remove</a>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button data-dismiss="modal" class="btn">Cancel</button>
+        <button class="btn btn-primary" type="submit">Upload</button>
+      </div>
+    </form>
+  </div>
+
+  <div class="modal fade" id="send-by-email">
+    <form action="{{ file.url }}/send" method="POST" style="margin-bottom: 0;">
+      <div class="modal-header">
+        <button class="close" data-dismiss="modal">&times;</button>
+        <h3>Send by email</h3>
+      </div>
+      <div class="modal-body">
+        <div class="input-prepend">
+          <label>Recipient</label>
+          <span class="add-on">@</span>
+          <input class="span3" id="prependedInput" type="text" name="recipient">
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button data-dismiss="modal" class="btn">Cancel</button>
+        <button class="btn btn-primary" type="submit">Send</button>
+      </div>
+    </form>
+  </div>
+
+  <div class="modal fade" id="delete">
+    <form action="{{ file.url }}/delete" method="POST" style="margin-bottom: 0;">
+      <div class="modal-header">
+        <button class="close" data-dismiss="modal">&times;</button>
+        <h3>Delete File</h3>
+      </div>
+      <div class="modal-body">
+        Are you sure you want to delete the file {{ file.name }} ?
+      </div>
+      <div class="modal-footer">
+        <button data-dismiss="modal" class="btn">Cancel</button>
+        <button type="submit" class="btn btn-primary">Really Delete</button>
+      </div>
+    </form>
+  </div>
+
+  <script>
+    // Simple document viewer...
+    $(document).ready(function() {
+      var imgSrc = $("img.preview").attr("src");
+
+      var previewNav = $(".preview-nav");
+      var previewPrev = $('.preview-prev');
+      var previewNext = $('.preview-next');
+
+      function showNav() {
+        $(document).bind("keydown", keyDown);
+        previewNav.stop().fadeTo(150, 1);
+      }
+
+      function hideNav() {
+        $(document).unbind("keydown", keyDown);
+        previewNav.stop().fadeTo(150, 0);
+      }
+
+      var page_num = {{ file.page_num }};
+      if (page_num > 1) {
+        $("div.preview").hover(showNav, hideNav);
+      }
+
+      // TODO: what if we want to go past the last page?
+      function loadNext() {
+        var img = $("img.preview");
+        var page = img.data("page") + 1;
+        if (page >= page_num) {
+          page = page - 1;
+        }
+        img.attr("src", imgSrc + "&page=" + page);
+        img.data("page", page);
+        return true;
+      }
+
+      function loadPrev() {
+        var img = $("img.preview");
+        var page = img.data("page") - 1;
+        if (page < 0) {
+          page = 0;
+        }
+        img.attr("src", imgSrc + "&page=" + page);
+        img.data("page", page);
+        return true;
+      }
+
+      previewNext.click(loadNext);
+
+      previewPrev.click(loadPrev);
+
+      function keyDown(e) {
+        var code = e.keyCode;
+        // Note: we prevent default keyboard action
+        if (code == 39) {
+          loadNext();
+          return false;
+        } else if (code == 37) {
+          loadPrev();
+          return false;
+        }
+        return true;
+      }
+    });
+  </script>
+
+{% endblock %}

@@ -1,0 +1,201 @@
+{% extends "social/base.html" %}
+
+<!-- A few macro first -->
+
+{% from "macros.html" import m_breadcrumbs, m_files_table %}
+
+{% macro m_profile(user) %}
+
+  <h3>{{ _("Personal details") }}</h3>
+
+  {% if user.email %}
+    <p>
+      <b>{{ _("Email:") }}</b>
+      <a href="mailto:{{ user.email }}">{{ user.email }}</a>
+    </p>
+  {% endif %}
+
+  {% if user.job_title %}
+    <p>
+      <b>{{ _("Job title:") }}</b>
+      {{ user.job_title }}
+    </p>
+  {% endif %}
+
+  {% if user.location %}
+    <p>
+      <b>{{ _("Location:") }}</b>
+      {{ user.location }}
+    </p>
+  {% endif %}
+
+  <h3>{{ _("Groups") }}</h3>
+
+  <p>{{ user.name }} {{ _("is member of the following groups:") }}</p>
+  <ul class="property-list" style="padding-left: 0;">
+    {% for group in user.groups %}
+      <li>
+        <a href="{{ group.url }}"> <img class="avatar-medium" src="{{ group.url }}/mugshot?s=45" class="">
+          {{ group.name }}</a> ({{ group.members|count }} members)
+      </li>
+    {% endfor %}
+  </ul>
+
+  <h3>{{ _("Stats") }}</h3>
+
+  <p>
+    <b>{{ _("Joined on:") }}</b>
+    {{ user.created_at|date_age }}
+  </p>
+
+  <p>
+    <b>{{ _("Latest connection:") }}</b>
+    {{ user.last_active|date_age }}
+  </p>
+
+{% endmacro %}
+
+{% macro m_activity(entries) %}
+  {% for e in entries %}
+    <p>{{ e.post }} on {{ e.object_id }}</p>
+  {% endfor %}
+{% endmacro %}
+
+{% macro m_images(images) %}
+  <ul class="image-gallery">
+    {% for image in images %}
+      <li id="image-{{ image.id }}"><a title="test" href="{{ image._url }}"><img
+              src="{{ image._url }}/preview?size=100"></a></li>
+      <script>
+        $(document).ready(function() {
+          var id = "#image-{{ image.id }}";
+          $(id).popover({
+            placement: "top",
+            html:      true,
+            title:     "{{ image.name }}",
+            content:   function() {
+              return 'Uploaded on {{ image.created_at.strftime("%Y-%m-%d") }}';
+            }
+          });
+        });
+      </script>
+    {% endfor %}
+  </ul>
+  <div style="clear: both"></div>
+{% endmacro %}
+
+{% macro m_audit(entries) %}
+  <h3 class="main">{{ _("Audit log") }}</h3>
+
+  <div style="margin-bottom: 25px;">
+    {% for entry in entries %}
+      {% if entry.type == 1 %}
+        <div>
+          <img src="{{ entry.user._url }}/mugshot?s=16">
+          <a href="{{ entry.user._url }}">{{ entry.user.name }}</a>
+          made changes on {{ entry.happened_at.strftime('%Y-%m-%d %H:%M') }}
+          to entity {{ entry.entity }}
+          <ul>
+            {% for key in entry.changes %}
+              {% set old_value, new_value = entry.changes[key] %}
+              <li>
+                {% if old_value %}
+                  Field <b>{{ key }}</b> changed from <em>{{ old_value }}</em> to <em>{{ new_value }}</em>
+                {% else %}
+                  Field <b>{{ key }}</b> set to <em>{{ new_value }}</em>
+                {% endif %}
+              </li>
+            {% endfor %}
+          </ul>
+        </div>
+      {% elif entry.type == 0 %}
+        <div>
+          <img src="{{ entry.user._url }}/mugshot?s=16">
+          <a href="{{ entry.user._url }}">{{ entry.user.name }}</a>
+          created a new {{ entry.entity.__class__.__name__ }},
+          <a href="{{ entry.entity._url }}">{{ entry.entity.name }}</a>,
+          on {{ entry.happened_at.strftime('%Y-%m-%d %H:%M') }}
+        </div>
+      {% elif entry.type == 2 %}
+        TODO: deletion.
+      {% endif %}
+    {% endfor %}
+  </div>
+{% endmacro %}
+
+<!-- Main stuff -->
+
+{% block main %}
+  <div class="span7">
+
+    <div class="header">
+      <img class="avatar avatar-large" src="{{ user._url }}/mugshot?s=140">
+
+      <div class="info">
+        <h2 class="title">{{ user.name }}
+        </h2>
+
+        <div class="job-title">{{ user.job_title }}</div>
+
+        {% if g.user != user %}
+          <form action="" method="post" style="margin-top: 10px;">
+            {% if g.user.is_following(user) %}
+              <button class="btn" name="action" value="unfollow">{{ _("Unfollow") }}</button>
+            {% else %}
+              <button class="btn" name="action" value="follow">{{ _("Follow") }}</button>
+            {% endif %}
+          </form>
+        {% endif %}
+      </div>
+    </div>
+
+    <ul class="nav nav-tabs clear">
+      {% for tab in tabs %}
+        {% if tab.id == active_tab_id %}
+          <li class="active"><a href="{{ tab.link }}">{{ _(tab.label) }}</a></li>
+        {% else %}
+          <li><a href="{{ tab.link }}">{{ _(tab.label) }}</a></li>
+        {% endif %}
+      {% endfor %}
+    </ul>
+
+    {% if active_tab_id == 'activity' %}
+      {{ m_activity(activity_entries) }}
+
+    {% elif active_tab_id == 'profile' %}
+      {{ m_profile(user) }}
+
+    {% elif active_tab_id == 'documents' %}
+      {{ m_files_table(documents) }}
+
+    {% elif active_tab_id == 'images' %}
+      {{ m_images(images) }}
+
+    {% elif active_tab_id == 'audit' %}
+      {{ m_audit(audit_entries) }}
+    {% endif %}
+
+  </div>
+
+  <div class="span3">
+    <h3>{{ _("Top tags") }}</h3>
+
+    <p>...</p>
+
+    <h3>{{ _("Followers") }} ({{ user.followers|count }})</h3>
+
+    {% for u in user.followers %}
+      <a href="{{ u.url }}"><img class="avatar-medium" src="{{ u.url }}/mugshot?s=40" alt="{{ u.name }}"
+              title="{{ u.name }}" style="margin-bottom: 4px;"></a>
+    {% endfor %}
+
+    <h3>{{ _("Groups") }} ({{ user.groups|count }})</h3>
+
+    {% for g in user.groups %}
+      <a href="{{ g.url }}"><img class="avatar-medium" src="{{ g.url }}/mugshot?s=40" alt="{{ g.name }}"
+              title="{{ g.name }}" style="margin-bottom: 4px;"></a>
+    {% endfor %}
+
+  </div>
+
+{% endblock %}

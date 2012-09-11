@@ -1,0 +1,11 @@
+{% macro render(list) %}
+{% for obj in list %}
+<li><strong><a href="{{obj.url}}">{{obj.name}}</a></strong>
+</li>
+{% endfor %}
+{% endmacro %}
+
+
+{% block container %}
+  {{ render(res) }}
+{%  endblock %}
